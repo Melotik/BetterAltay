@@ -24,11 +24,13 @@ if "%PHP_BINARY%"=="" (
 
 if exist BetterAltay.phar (
 	set POCKETMINE_FILE=BetterAltay.phar
+) else if exist src/pocketmine/PocketMine.php (
+	set POCKETMINE_FILE=src/pocketmine/PocketMine.php
 ) else (
-	echo BetterAltay.phar not found
-	echo Downloads can be found at https://github.com/Benedikt05/BetterAltay/releases
-	pause
-	exit 1
+    echo BetterAltay.phar not found
+    echo Downloads can be found at https://github.com/Benedikt05/BetterAltay/releases
+    pause
+    exit 1
 )
 
 if exist bin\mintty.exe (

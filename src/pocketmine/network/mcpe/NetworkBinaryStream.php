@@ -41,6 +41,7 @@ use pocketmine\nbt\tag\NamedTag;
 use pocketmine\network\mcpe\convert\ItemTranslator;
 use pocketmine\network\mcpe\convert\ItemTypeDictionary;
 use pocketmine\network\mcpe\convert\RuntimeBlockMapping;
+use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\network\mcpe\protocol\types\CommandOriginData;
 use pocketmine\network\mcpe\protocol\types\EntityLink;
 use pocketmine\network\mcpe\protocol\types\GameRuleType;
@@ -62,6 +63,8 @@ class NetworkBinaryStream extends BinaryStream{
 	private const DAMAGE_TAG = "Damage"; //TAG_Int
 	private const DAMAGE_TAG_CONFLICT_RESOLUTION = "___Damage_ProtocolCollisionResolution___";
 	private const PM_META_TAG = "___Meta___";
+
+	public $protocol = -2;
 
 	public function getString() : string{
 		return $this->get($this->getUnsignedVarInt());

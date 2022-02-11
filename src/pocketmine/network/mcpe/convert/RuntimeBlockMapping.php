@@ -28,6 +28,7 @@ use pocketmine\nbt\NBT;
 use pocketmine\nbt\NetworkLittleEndianNBTStream;
 use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\network\mcpe\NetworkBinaryStream;
+use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\utils\AssumptionFailedError;
 use function file_get_contents;
 use function json_decode;
@@ -49,26 +50,30 @@ final class RuntimeBlockMapping{
 	}
 
 	public static function init() : void{
-		$canonicalBlockStatesFile = file_get_contents(\pocketmine\RESOURCE_PATH . "vanilla/canonical_block_states.nbt");
-		if($canonicalBlockStatesFile === false){
-			throw new AssumptionFailedError("Missing required resource file");
-		}
-		$stream = new NetworkBinaryStream($canonicalBlockStatesFile);
-		$list = [];
-		while(!$stream->feof()){
-			$list[] = $stream->getNbtCompoundRoot();
-		}
-		self::$bedrockKnownStates = $list;
+		foreach (ProtocolInfo::ACCEPTED_PROTOCOL as $i => $v){
+			$canonicalBlockStatesFile = file_get_contents(\pocketmine\RESOURCE_PATH . "vanilla/canonical_block_states_$v.nbt");
+			if($canonicalBlockStatesFile === false){
+				throw new AssumptionFailedError("Missing required resource file");
+			}
+			$stream = new NetworkBinaryStream($canonicalBlockStatesFile);
+			$stream->protocol = $v;
+			$list = [];
+			while(!$stream->feof()){
+				$list[] = $stream->getNbtCompoundRoot();
+			}
+			self::$bedrockKnownStates[$v] = $list;
 
-		self::setupLegacyMappings();
+			self::setupLegacyMappings($v);
+		}
 	}
 
-	private static function setupLegacyMappings() : void{
+	private static function setupLegacyMappings(int $protocol) : void{
 		$legacyIdMap = json_decode(file_get_contents(\pocketmine\RESOURCE_PATH . "vanilla/block_id_map.json"), true);
 
 		/** @var R12ToCurrentBlockMapEntry[] $legacyStateMap */
 		$legacyStateMap = [];
 		$legacyStateMapReader = new NetworkBinaryStream(file_get_contents(\pocketmine\RESOURCE_PATH . "vanilla/r12_to_current_block_map.bin"));
+		$legacyStateMapReader->protocol = $protocol;
 		$nbtReader = new NetworkLittleEndianNBTStream();
 		while(!$legacyStateMapReader->feof()){
 			$id = $legacyStateMapReader->getString();
@@ -87,7 +92,7 @@ final class RuntimeBlockMapping{
 		 * @var int[][] $idToStatesMap string id -> int[] list of candidate state indices
 		 */
 		$idToStatesMap = [];
-		foreach(self::$bedrockKnownStates as $k => $state){
+		foreach(self::$bedrockKnownStates[$protocol] as $k => $state){
 			$idToStatesMap[$state->getString("name")][] = $k;
 		}
 		foreach($legacyStateMap as $pair){
@@ -109,18 +114,18 @@ final class RuntimeBlockMapping{
 				throw new \RuntimeException("Mapped new state does not appear in network table");
 			}
 			foreach($idToStatesMap[$mappedName] as $k){
-				$networkState = self::$bedrockKnownStates[$k];
+				$networkState = self::$bedrockKnownStates[$protocol][$k];
 				if($mappedState->equals($networkState)){
 					self::registerMapping($k, $id, $data);
 					continue 2;
 				}
 			}
-			throw new \RuntimeException("Mapped new state does not appear in network table");
+//			throw new \RuntimeException("Mapped new state does not appear in network table");
 		}
 	}
 
 	private static function lazyInit() : void{
-		if(self::$bedrockKnownStates === null){
+		if(!isset(self::$bedrockKnownStates)){
 			self::init();
 		}
 	}
@@ -152,8 +157,8 @@ final class RuntimeBlockMapping{
 	/**
 	 * @return CompoundTag[]
 	 */
-	public static function getBedrockKnownStates() : array{
+	public static function getBedrockKnownStates(int $protocol) : array{
 		self::lazyInit();
-		return self::$bedrockKnownStates;
+		return self::$bedrockKnownStates[$protocol];
 	}
 }

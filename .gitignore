@@ -1,0 +1,8 @@
+vendor/
+/altay.yml
+/betteraltay.yml
+/maps/idcounts.dat
+/pocketmine.yml
+/server.lock
+/server.log
+/server.properties
