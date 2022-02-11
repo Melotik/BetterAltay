@@ -76,13 +76,13 @@ final class ItemTypeDictionary{
 				$params[$v][] = new ItemTypeEntry($name, $entry["runtime_id"], $entry["component_based"]);
 			}
 		}
-		return new self($params[$protocol], $protocol);
+		return new self($params[$protocol]);
 	}
 
 	/**
 	 * @param ItemTypeEntry[] $itemTypes
 	 */
-	public function __construct(array $itemTypes, int $protocol){
+	public function __construct(array $itemTypes){
 		$this->itemTypes = $itemTypes;
 		foreach($this->itemTypes as $type){
 			$this->stringToIntMap[$type->getStringId()] = $type->getNumericId();
