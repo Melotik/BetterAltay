@@ -36,7 +36,9 @@ use pocketmine\math\RayTraceResult;
 use pocketmine\math\Vector3;
 use pocketmine\metadata\Metadatable;
 use pocketmine\metadata\MetadataValue;
+use pocketmine\network\mcpe\convert\GlobalItemTypeDictionary;
 use pocketmine\network\mcpe\convert\RuntimeBlockMapping;
+use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\Player;
 use pocketmine\plugin\Plugin;
 use function array_merge;
@@ -103,7 +105,11 @@ class Block extends Position implements BlockIds, Metadatable{
 	 * @internal
 	 */
 	public function getRuntimeId() : int{
-		return RuntimeBlockMapping::toStaticRuntimeId($this->getId(), $this->getDamage());
+		$protocol = -1;
+		foreach(GlobalItemTypeDictionary::getInstance()->getDictionaries() as $bp => $b){
+			$protocol = $bp;
+		}
+		return RuntimeBlockMapping::toStaticRuntimeId($this->getId(), $this->getDamage(), $protocol);
 	}
 
 	final public function getDamage() : int{

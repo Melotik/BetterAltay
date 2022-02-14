@@ -23,61 +23,26 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\convert;
 
-use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\network\mcpe\protocol\types\ItemTypeEntry;
-use pocketmine\utils\AssumptionFailedError;
-use pocketmine\utils\SingletonTrait;
 use function array_key_exists;
-use function file_get_contents;
-use function is_array;
-use function is_bool;
-use function is_int;
-use function is_string;
-use function json_decode;
 
 final class ItemTypeDictionary{
-	use SingletonTrait;
 
 	/**
 	 * @var ItemTypeEntry[]
 	 * @phpstan-var list<ItemTypeEntry>
 	 */
-	private $itemTypes;
+	private array $itemTypes;
 	/**
 	 * @var string[]
 	 * @phpstan-var array<int, string>
 	 */
-	private $intToStringIdMap = [];
+	private array $intToStringIdMap = [];
 	/**
 	 * @var int[]
 	 * @phpstan-var array<string, int>
 	 */
-	private $stringToIntMap = [];
-
-	private static function make() : self{
-		$data = null;
-		$protocol = null;
-		foreach (ProtocolInfo::ACCEPTED_PROTOCOL as $i => $v){
-			$data = file_get_contents(\pocketmine\RESOURCE_PATH . "/vanilla/required_item_list_$v.json");
-			if($data === false) throw new AssumptionFailedError("Missing required resource file");
-			$protocol = $v;
-		}
-		$table = json_decode($data, true);
-		if(!is_array($table)){
-			throw new AssumptionFailedError("Invalid item list format");
-		}
-
-		$params = [];
-		foreach (ProtocolInfo::ACCEPTED_PROTOCOL as $i => $v){
-			foreach($table as $name => $entry){
-				if(!is_array($entry) || !is_string($name) || !isset($entry["component_based"], $entry["runtime_id"]) || !is_bool($entry["component_based"]) || !is_int($entry["runtime_id"])){
-					throw new AssumptionFailedError("Invalid item list format");
-				}
-				$params[$v][] = new ItemTypeEntry($name, $entry["runtime_id"], $entry["component_based"]);
-			}
-		}
-		return new self($params[$protocol]);
-	}
+	private array $stringToIntMap = [];
 
 	/**
 	 * @param ItemTypeEntry[] $itemTypes

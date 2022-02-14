@@ -48,6 +48,8 @@ interface ProtocolInfo{
 
 	public const ACCEPTED_PROTOCOL = [self::PROTOCOL_1_18_0, self::PROTOCOL_1_18_10];
 
+	public const ACCEPTED_PROTOCOL_WITH_VALUE = [self::PROTOCOL_1_18_0 => 475, self::PROTOCOL_1_18_10 => 486];
+
 	public const LOGIN_PACKET = 0x01;
 	public const PLAY_STATUS_PACKET = 0x02;
 	public const SERVER_TO_CLIENT_HANDSHAKE_PACKET = 0x03;

@@ -114,6 +114,7 @@ use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\nbt\tag\DoubleTag;
 use pocketmine\nbt\tag\ListTag;
 use pocketmine\nbt\tag\StringTag;
+use pocketmine\network\mcpe\convert\GlobalItemTypeDictionary;
 use pocketmine\network\mcpe\convert\ItemTypeDictionary;
 use pocketmine\network\mcpe\encryption\EncryptionContext;
 use pocketmine\network\mcpe\encryption\PrepareEncryptionTask;
@@ -2457,7 +2458,7 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 		$pk->levelId = "";
 		$pk->worldName = $this->server->getMotd();
 		$pk->experiments = new Experiments([], false);
-		$pk->itemTable = ItemTypeDictionary::getInstance()->getEntries();
+		$pk->itemTable = GlobalItemTypeDictionary::getInstance()->getDictionary($this->protocol)->getEntries();
 		$pk->playerMovementSettings = new PlayerMovementSettings(PlayerMovementType::LEGACY, 0, false);
 		$pk->serverSoftwareVersion = sprintf("%s %s", \pocketmine\NAME, \pocketmine\VERSION);
 		$pk->blockPaletteChecksum = 0; //we don't bother with this (0 skips verification) - the preimage is some dumb stringified NBT, not even actual NBT
@@ -2774,7 +2775,7 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 					/** @var Block[] $blocks */
 					$blocks = array_merge($target->getAllSides(), $block->getAllSides()); //getAllSides() on each of these will include $target and $block because they are next to each other
 
-					$this->level->sendBlocks([$this], $blocks, UpdateBlockPacket::FLAG_ALL_PRIORITY);
+//					$this->level->sendBlocks([$this], $blocks, UpdateBlockPacket::FLAG_ALL_PRIORITY);
 
 					return true;
 				case UseItemTransactionData::ACTION_BREAK_BLOCK:
@@ -2803,7 +2804,7 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 					$blocks = $target->getAllSides();
 					$blocks[] = $target;
 
-					$this->level->sendBlocks([$this], $blocks, UpdateBlockPacket::FLAG_ALL_PRIORITY);
+//					$this->level->sendBlocks([$this], $blocks, UpdateBlockPacket::FLAG_ALL_PRIORITY);
 
 					foreach($blocks as $b){
 						$tile = $this->level->getTile($b);

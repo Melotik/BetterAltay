@@ -75,6 +75,7 @@ use pocketmine\metadata\Metadatable;
 use pocketmine\metadata\MetadataValue;
 use pocketmine\nbt\tag\ListTag;
 use pocketmine\nbt\tag\StringTag;
+use pocketmine\network\mcpe\convert\GlobalItemTypeDictionary;
 use pocketmine\network\mcpe\convert\RuntimeBlockMapping;
 use pocketmine\network\mcpe\protocol\AddActorPacket;
 use pocketmine\network\mcpe\protocol\BatchPacket;
@@ -82,6 +83,7 @@ use pocketmine\network\mcpe\protocol\DataPacket;
 use pocketmine\network\mcpe\protocol\GameRulesChangedPacket;
 use pocketmine\network\mcpe\protocol\LevelEventPacket;
 use pocketmine\network\mcpe\protocol\LevelSoundEventPacket;
+use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\network\mcpe\protocol\SetDifficultyPacket;
 use pocketmine\network\mcpe\protocol\SetTimePacket;
 use pocketmine\network\mcpe\protocol\types\DimensionIds;
@@ -1040,7 +1042,7 @@ class Level implements ChunkManager, Metadatable{
 	 *
 	 * @return void
 	 */
-	public function sendBlocks(array $target, array $blocks, int $flags = UpdateBlockPacket::FLAG_NONE, bool $optimizeRebuilds = false){
+	public function sendBlocks(array $target, array $blocks, int $flags = UpdateBlockPacket::FLAG_NONE, bool $optimizeRebuilds = false){// TODO: fix runtimeid thing
 		$packets = [];
 		if($optimizeRebuilds){
 			$chunks = [];
@@ -1060,11 +1062,13 @@ class Level implements ChunkManager, Metadatable{
 				$pk->y = $b->y;
 				$pk->z = $b->z;
 
-				if($b instanceof Block){
-					$pk->blockRuntimeId = $b->getRuntimeId();
-				}else{
-					$fullBlock = $this->getFullBlock($b->x, $b->y, $b->z);
-					$pk->blockRuntimeId = RuntimeBlockMapping::toStaticRuntimeId($fullBlock >> 4, $fullBlock & 0xf);
+				foreach ($target as $player){
+					if($b instanceof Block){
+						$pk->blockRuntimeId = $b->getRuntimeId();
+					}else{
+						$fullBlock = $this->getFullBlock($b->x, $b->y, $b->z);
+						$pk->blockRuntimeId = RuntimeBlockMapping::toStaticRuntimeId($fullBlock >> 4, $fullBlock & 0xf, $player->getProtocol());
+					}
 				}
 
 				$pk->flags = $first ? $flags : UpdateBlockPacket::FLAG_NONE;
@@ -1082,11 +1086,13 @@ class Level implements ChunkManager, Metadatable{
 				$pk->y = $b->y;
 				$pk->z = $b->z;
 
-				if($b instanceof Block){
-					$pk->blockRuntimeId = $b->getRuntimeId();
-				}else{
-					$fullBlock = $this->getFullBlock($b->x, $b->y, $b->z);
-					$pk->blockRuntimeId = RuntimeBlockMapping::toStaticRuntimeId($fullBlock >> 4, $fullBlock & 0xf);
+				foreach ($target as $player){
+					if($b instanceof Block){
+						$pk->blockRuntimeId = $b->getRuntimeId();
+					}else{
+						$fullBlock = $this->getFullBlock($b->x, $b->y, $b->z);
+						$pk->blockRuntimeId = RuntimeBlockMapping::toStaticRuntimeId($fullBlock >> 4, $fullBlock & 0xf, $player->getProtocol());
+					}
 				}
 
 				$pk->flags = $flags;

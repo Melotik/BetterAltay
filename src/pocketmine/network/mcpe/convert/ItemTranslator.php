@@ -112,7 +112,7 @@ final class ItemTranslator{
 			}
 		}
 
-		return new self(ItemTypeDictionary::getInstance(), $simpleMappings, $complexMappings);
+		return new self(GlobalItemTypeDictionary::getInstance(), $simpleMappings, $complexMappings);
 	}
 
 	/**
@@ -121,20 +121,22 @@ final class ItemTranslator{
 	 * @phpstan-param array<string, int> $simpleMappings
 	 * @phpstan-param array<string, array<int, int>> $complexMappings
 	 */
-	public function __construct(ItemTypeDictionary $dictionary, array $simpleMappings, array $complexMappings){
-		foreach($dictionary->getEntries() as $entry){
-			$stringId = $entry->getStringId();
-			$netId = $entry->getNumericId();
-			if(isset($complexMappings[$stringId])){
-				[$id, $meta] = $complexMappings[$stringId];
-				$this->complexCoreToNetMapping[$id][$meta] = $netId;
-				$this->complexNetToCoreMapping[$netId] = [$id, $meta];
-			}elseif(isset($simpleMappings[$stringId])){
-				$this->simpleCoreToNetMapping[$simpleMappings[$stringId]] = $netId;
-				$this->simpleNetToCoreMapping[$netId] = $simpleMappings[$stringId];
-			}else{
-				//not all items have a legacy mapping - for now, we only support the ones that do
-				continue;
+	public function __construct(GlobalItemTypeDictionary $dictionary, array $simpleMappings, array $complexMappings){
+		foreach ($dictionary->getDictionaries() as $dictionary){
+			foreach ($dictionary->getEntries() as $entry){
+				$stringId = $entry->getStringId();
+				$netId = $entry->getNumericId();
+				if(isset($complexMappings[$stringId])){
+					[$id, $meta] = $complexMappings[$stringId];
+					$this->complexCoreToNetMapping[$id][$meta] = $netId;
+					$this->complexNetToCoreMapping[$netId] = [$id, $meta];
+				}elseif(isset($simpleMappings[$stringId])){
+					$this->simpleCoreToNetMapping[$simpleMappings[$stringId]] = $netId;
+					$this->simpleNetToCoreMapping[$netId] = $simpleMappings[$stringId];
+				}else{
+					//not all items have a legacy mapping - for now, we only support the ones that do
+					continue;
+				}
 			}
 		}
 	}

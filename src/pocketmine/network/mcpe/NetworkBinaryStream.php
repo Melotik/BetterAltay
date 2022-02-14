@@ -38,6 +38,7 @@ use pocketmine\nbt\NetworkLittleEndianNBTStream;
 use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\nbt\tag\IntTag;
 use pocketmine\nbt\tag\NamedTag;
+use pocketmine\network\mcpe\convert\GlobalItemTypeDictionary;
 use pocketmine\network\mcpe\convert\ItemTranslator;
 use pocketmine\network\mcpe\convert\ItemTypeDictionary;
 use pocketmine\network\mcpe\convert\RuntimeBlockMapping;
@@ -265,8 +266,10 @@ class NetworkBinaryStream extends BinaryStream{
 				$extraData->get($extraData->getLShort());
 			}
 
-			if($netId === ItemTypeDictionary::getInstance()->fromStringId("minecraft:shield")){
-				$extraData->getLLong(); //"blocking tick" (ffs mojang)
+			foreach (GlobalItemTypeDictionary::getInstance()->getDictionaries() as $dp => $d){
+				if($netId === $d->fromStringId("minecraft:shield")){
+					$extraData->getLLong(); //"blocking tick" (ffs mojang)
+				}
 			}
 
 			if(!$extraData->feof()){
@@ -323,7 +326,9 @@ class NetworkBinaryStream extends BinaryStream{
 		if($isBlockItem){
 			$block = $item->getBlock();
 			if($block->getId() !== BlockIds::AIR){
-				$blockRuntimeId = RuntimeBlockMapping::toStaticRuntimeId($block->getId(), $block->getDamage());
+				foreach (ProtocolInfo::ACCEPTED_PROTOCOL_WITH_VALUE as $i => $v){
+					$blockRuntimeId = RuntimeBlockMapping::toStaticRuntimeId($block->getId(), $block->getDamage(), $v);
+				}
 			}
 		}
 		$this->putVarInt($blockRuntimeId);
@@ -368,8 +373,10 @@ class NetworkBinaryStream extends BinaryStream{
 			$extraData->putLInt(0); //CanPlaceOn entry count (TODO)
 			$extraData->putLInt(0); //CanDestroy entry count (TODO)
 
-			if($netId === ItemTypeDictionary::getInstance()->fromStringId("minecraft:shield")){
-				$extraData->putLLong(0); //"blocking tick" (ffs mojang)
+			foreach (GlobalItemTypeDictionary::getInstance()->getDictionaries() as $dp => $d){
+				if($netId === $d->fromStringId("minecraft:shield")){
+					$extraData->putLLong(0); //"blocking tick" (ffs mojang)
+				}
 			}
 			return $extraData->getBuffer();
 		})());
