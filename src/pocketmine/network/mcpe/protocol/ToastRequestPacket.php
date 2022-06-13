@@ -21,19 +21,31 @@
 
 declare(strict_types=1);
 
-namespace pocketmine;
+namespace pocketmine\network\mcpe\protocol;
 
-use function defined;
+#include <rules/DataPacket.h>
 
-// composer autoload doesn't use require_once and also pthreads can inherit things
-// TODO: drop this file and use a final class with constants
-if(defined('pocketmine\_VERSION_INFO_INCLUDED')){
-	return;
+use pocketmine\network\mcpe\NetworkSession;
+
+class ToastRequestPacket extends DataPacket{
+	public const NETWORK_ID = ProtocolInfo::TOAST_REQUEST_PACKET;
+	
+	/** @var string  */
+	public string $title = "";
+	/** @var string  */
+	public string $content = "";
+	
+	protected function decodePayload(){
+		$this->title = $this->getString();
+		$this->content = $this->getString();
+	}
+	
+	protected function encodePayload(){
+		$this->putString($this->title);
+		$this->putString($this->content);
+	}
+	
+	public function handle(NetworkSession $session) : bool{
+		return $session->handleToastRequest($this);
+	}
 }
-const _VERSION_INFO_INCLUDED = true;
-
-const NAME = "BetterAltay";
-const BASE_VERSION = "3.28.0"; //Don't change this anymore. Change the FORK_VERSION instead.
-const FORK_VERSION = "1.2.2";
-const IS_DEVELOPMENT_BUILD = true;
-const BUILD_CHANNEL = "master";
