@@ -21,32 +21,17 @@
 
 declare(strict_types=1);
 
-namespace pocketmine\network\mcpe\protocol\types\inventory;
+namespace pocketmine\network\mcpe\protocol\types;
 
-use pocketmine\network\mcpe\NetworkBinaryStream as PacketSerializer;
-use pocketmine\network\mcpe\protocol\InventoryTransactionPacket;
-use pocketmine\network\mcpe\protocol\types\NetworkInventoryAction;
+/**
+ * List of supported compression algorithms for compressing packet batches.
+ */
+final class CompressionAlgorithm{
 
-class NormalTransactionData extends TransactionData{
-
-	public function getTypeId() : int{
-		return InventoryTransactionPacket::TYPE_NORMAL;
+	private function __construct(){
+		//NOOP
 	}
 
-	protected function decodeData(PacketSerializer $stream) : void{
-
-	}
-
-	protected function encodeData(PacketSerializer $stream) : void{
-
-	}
-
-	/**
-	 * @param NetworkInventoryAction[] $actions
-	 */
-	public static function new(array $actions) : self{
-		$result = new self();
-		$result->actions = $actions;
-		return $result;
-	}
+	public const ZLIB = 0;
+	public const SNAPPY = 1;
 }

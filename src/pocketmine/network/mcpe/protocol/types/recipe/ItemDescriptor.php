@@ -21,32 +21,15 @@
 
 declare(strict_types=1);
 
-namespace pocketmine\network\mcpe\protocol\types\inventory;
+namespace pocketmine\network\mcpe\protocol\types\recipe;
 
-use pocketmine\network\mcpe\NetworkBinaryStream as PacketSerializer;
-use pocketmine\network\mcpe\protocol\InventoryTransactionPacket;
-use pocketmine\network\mcpe\protocol\types\NetworkInventoryAction;
+use pocketmine\network\mcpe\NetworkBinaryStream;
 
-class NormalTransactionData extends TransactionData{
+/**
+ * Describes what items are accepted in a recipe input.
+ */
+interface ItemDescriptor{
+	public function getTypeId() : int;
 
-	public function getTypeId() : int{
-		return InventoryTransactionPacket::TYPE_NORMAL;
-	}
-
-	protected function decodeData(PacketSerializer $stream) : void{
-
-	}
-
-	protected function encodeData(PacketSerializer $stream) : void{
-
-	}
-
-	/**
-	 * @param NetworkInventoryAction[] $actions
-	 */
-	public static function new(array $actions) : self{
-		$result = new self();
-		$result->actions = $actions;
-		return $result;
-	}
+	public function write(NetworkBinaryStream $out) : void;
 }
