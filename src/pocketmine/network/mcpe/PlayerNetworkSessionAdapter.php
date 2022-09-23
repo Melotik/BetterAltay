@@ -30,7 +30,6 @@ use pocketmine\maps\MapData;
 use pocketmine\maps\MapManager;
 use pocketmine\network\mcpe\protocol\ActorEventPacket;
 use pocketmine\network\mcpe\protocol\ActorPickRequestPacket;
-use pocketmine\network\mcpe\protocol\AdventureSettingsPacket;
 use pocketmine\network\mcpe\protocol\AnimatePacket;
 use pocketmine\network\mcpe\protocol\BlockActorDataPacket;
 use pocketmine\network\mcpe\protocol\BlockPickRequestPacket;
@@ -64,6 +63,7 @@ use pocketmine\network\mcpe\protocol\PlayerHotbarPacket;
 use pocketmine\network\mcpe\protocol\PlayerSkinPacket;
 use pocketmine\network\mcpe\protocol\PlayerInputPacket;
 use pocketmine\network\mcpe\protocol\RequestChunkRadiusPacket;
+use pocketmine\network\mcpe\protocol\RequestNetworkSettingsPacket;
 use pocketmine\network\mcpe\protocol\ResourcePackChunkRequestPacket;
 use pocketmine\network\mcpe\protocol\ResourcePackClientResponsePacket;
 use pocketmine\network\mcpe\protocol\RiderJumpPacket;
@@ -210,10 +210,6 @@ class PlayerNetworkSessionAdapter extends NetworkSession{
 		return true; //this is a broken useless packet, so we don't use it
 	}
 
-	public function handleAdventureSettings(AdventureSettingsPacket $packet) : bool{
-		return $this->player->handleAdventureSettings($packet);
-	}
-
 	public function handleBlockActorData(BlockActorDataPacket $packet) : bool{
 		return $this->player->handleBlockEntityData($packet);
 	}
@@ -307,7 +303,7 @@ class PlayerNetworkSessionAdapter extends NetworkSession{
 		if($packet->cancelReason !== null){
 			return $this->player->onFormSubmit($packet->formId, null);
 		}else{
-			return $this->player->onFormSubmit($packet->formId, self::stupid_json_decode($packet->formData, true));
+			return $this->player->onFormSubmit($packet->formId, self::stupid_json_decode($packet->formData ?? "", true));
 		}
 	}
 
@@ -434,5 +430,13 @@ class PlayerNetworkSessionAdapter extends NetworkSession{
 		}
 
 		return false;
+	}
+/*
+	public function handleRequestAbility(RequestAbilityPacket $packet) : bool{
+		return $this->player->handleRequestAbility($packet);
+	}*/
+
+	public function handleRequestNetworkSettings(RequestNetworkSettingsPacket $packet) : bool{
+		return $this->player->handleRequestNetworkSettings($packet);
 	}
 }

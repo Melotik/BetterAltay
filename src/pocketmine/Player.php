@@ -119,7 +119,6 @@ use pocketmine\network\mcpe\encryption\EncryptionContext;
 use pocketmine\network\mcpe\encryption\PrepareEncryptionTask;
 use pocketmine\network\mcpe\PlayerNetworkSessionAdapter;
 use pocketmine\network\mcpe\protocol\ActorEventPacket;
-use pocketmine\network\mcpe\protocol\AdventureSettingsPacket;
 use pocketmine\network\mcpe\protocol\AnimatePacket;
 use pocketmine\network\mcpe\protocol\AvailableActorIdentifiersPacket;
 use pocketmine\network\mcpe\protocol\AvailableCommandsPacket;
@@ -146,9 +145,12 @@ use pocketmine\network\mcpe\protocol\MobEquipmentPacket;
 use pocketmine\network\mcpe\protocol\ModalFormRequestPacket;
 use pocketmine\network\mcpe\protocol\MovePlayerPacket;
 use pocketmine\network\mcpe\protocol\NetworkChunkPublisherUpdatePacket;
+use pocketmine\network\mcpe\protocol\NetworkSettingsPacket;
 use pocketmine\network\mcpe\protocol\PlayerActionPacket;
 use pocketmine\network\mcpe\protocol\PlayStatusPacket;
 use pocketmine\network\mcpe\protocol\ProtocolInfo;
+//use pocketmine\network\mcpe\protocol\RequestAbilityPacket;
+use pocketmine\network\mcpe\protocol\RequestNetworkSettingsPacket;
 use pocketmine\network\mcpe\protocol\ResourcePackChunkDataPacket;
 use pocketmine\network\mcpe\protocol\ResourcePackChunkRequestPacket;
 use pocketmine\network\mcpe\protocol\ResourcePackClientResponsePacket;
@@ -167,6 +169,8 @@ use pocketmine\network\mcpe\protocol\ToastRequestPacket;
 use pocketmine\network\mcpe\protocol\TransferPacket;
 use pocketmine\network\mcpe\protocol\types\CommandEnum;
 use pocketmine\network\mcpe\protocol\types\CommandOriginData;
+use pocketmine\network\mcpe\protocol\types\CommandPermissions;
+use pocketmine\network\mcpe\protocol\types\CompressionAlgorithm;
 use pocketmine\network\mcpe\protocol\types\ContainerIds;
 use pocketmine\network\mcpe\protocol\types\DimensionIds;
 use pocketmine\network\mcpe\protocol\types\Experiments;
@@ -460,7 +464,7 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 	/** @var FishingHook|null */
 	protected $fishingHook = null;
 	/** @var int */
-	protected $commandPermission = AdventureSettingsPacket::PERMISSION_NORMAL;
+	protected $commandPermission = CommandPermissions::NORMAL;
 	/** @var bool */
 	protected $keepExperience = false;
 
@@ -559,7 +563,7 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 	 */
 	public function setAllowFlight(bool $value){
 		$this->allowFlight = $value;
-		$this->sendSettings();
+		//$this->sendSettings();
 	}
 
 	public function getAllowFlight() : bool{
@@ -573,7 +577,7 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 		if($this->flying !== $value){
 			$this->flying = $value;
 			$this->resetFallDistance();
-			$this->sendSettings();
+			//$this->sendSettings();
 		}
 	}
 
@@ -583,7 +587,7 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 
 	public function setMuted(bool $value){
 		$this->muted = $value;
-		$this->sendSettings();
+		//$this->sendSettings();
 	}
 
 	public function isMuted() : bool{
@@ -595,7 +599,7 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 	 */
 	public function setAutoJump(bool $value){
 		$this->autoJump = $value;
-		$this->sendSettings();
+		//$this->sendSettings();
 	}
 
 	public function hasAutoJump() : bool{
@@ -746,7 +750,7 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 			$this->server->removeOp($this->getName());
 		}
 
-		$this->sendSettings();
+		//$this->sendSettings();
 	}
 
 	/**
@@ -1550,7 +1554,7 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 			Command::broadcastCommandMessage($this, new TranslationContainer("commands.gamemode.success.self", [Server::getGamemodeString($gm)]));
 		}
 
-		$this->sendSettings();
+		//$this->sendSettings();
 		$this->inventory->sendCreativeContents();
 
 		return true;
@@ -2019,22 +2023,40 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 		$this->addDefaultWindows();
 	}
 
+	public function handleRequestNetworkSettings(RequestNetworkSettingsPacket $packet): bool{
+		$protocolVersion = $packet->getProtocolVersion();
+		if($protocolVersion !== ProtocolInfo::CURRENT_PROTOCOL){
+			$this->sendPlayStatus($protocolVersion < ProtocolInfo::CURRENT_PROTOCOL ? PlayStatusPacket::LOGIN_FAILED_CLIENT : PlayStatusPacket::LOGIN_FAILED_SERVER, true);
+
+			//This pocketmine disconnect message will only be seen by the console (PlayStatusPacket causes the messages to be shown for the client)
+			$this->close("", $this->server->getLanguage()->translateString("pocketmine.disconnect.incompatibleProtocol", [$packet->protocol]), false);
+			return true;
+		}
+
+		//TODO: we're filling in the defaults to get pre-1.19.30 behaviour back for now, but we should explore the new options in the future
+		$this->sendDataPacket(NetworkSettingsPacket::create(
+			NetworkSettingsPacket::COMPRESS_EVERYTHING,
+			CompressionAlgorithm::ZLIB,
+			false,
+			0,
+			0
+		));
+
+		return true;
+	}
+
 	public function handleLogin(LoginPacket $packet) : bool{
 		if($this->seenLoginPacket){
 			return false;
 		}
 		$this->seenLoginPacket = true;
 
-		if($packet->protocol !== ProtocolInfo::CURRENT_PROTOCOL){
-			if($packet->protocol < ProtocolInfo::CURRENT_PROTOCOL){
-				$this->sendPlayStatus(PlayStatusPacket::LOGIN_FAILED_CLIENT, true);
-			}else{
-				$this->sendPlayStatus(PlayStatusPacket::LOGIN_FAILED_SERVER, true);
-			}
+		$protocolVersion = $packet->protocol;
+		if($protocolVersion !== ProtocolInfo::CURRENT_PROTOCOL){
+			$this->sendPlayStatus($protocolVersion < ProtocolInfo::CURRENT_PROTOCOL ? PlayStatusPacket::LOGIN_FAILED_CLIENT : PlayStatusPacket::LOGIN_FAILED_SERVER, true);
 
 			//This pocketmine disconnect message will only be seen by the console (PlayStatusPacket causes the messages to be shown for the client)
 			$this->close("", $this->server->getLanguage()->translateString("pocketmine.disconnect.incompatibleProtocol", [$packet->protocol]), false);
-
 			return true;
 		}
 
@@ -2302,7 +2324,7 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 			$this->namedtag->setInt("playerGameType", $this->gamemode);
 		}
 
-		$this->allowFlight = $this->isCreative();
+		$this->allowFlight = $this->gamemode === self::CREATIVE;
 		$this->keepMovement = $this->isSpectator() || $this->allowMovementCheats();
 
 		if(($level = $this->server->getLevelByName($this->namedtag->getString("Level", "", true))) === null){
@@ -2485,7 +2507,7 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 		}
 
 		$this->sendCommandData();
-		$this->sendSettings();
+		// $this->sendSettings();
 		$this->sendPotionEffects($this);
 		$this->sendData($this);
 
@@ -3421,6 +3443,7 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 
 		return true;
 	}
+/*
 
 	public function handleAdventureSettings(AdventureSettingsPacket $packet) : bool{
 		if(!$this->constructed or $packet->entityUniqueId !== $this->getId()){
@@ -3434,6 +3457,31 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 			$ev = new PlayerToggleFlightEvent($this, $isFlying);
 			if($isFlying and !$this->allowFlight){
 				$ev->setCancelled();
+//=======
+	public function handleRequestAbility(RequestAbilityPacket $packet) : bool{
+		if($packet->getAbilityId() === RequestAbilityPacket::ABILITY_FLYING){
+			$isFlying = $packet->getAbilityValue();
+			if(!is_bool($isFlying)){
+				throw new ErrorException("Flying ability should always have a bool value");
+			}
+			if($isFlying !== $this->isFlying()){
+				if(!$this->constructed){ // $packet->entityUniqueId !== $this->getId()
+					return false; //TODO
+				}
+
+				$ev = new PlayerToggleFlightEvent($this, $isFlying);
+				if($isFlying and !$this->allowFlight){
+					$ev->setCancelled();
+				}
+	
+				$ev->call();
+				if($ev->isCancelled()){
+					//$this->sendSettings(true);
+				}else{ //don't use setFlying() here, to avoid feedback loops
+					$this->flying = $ev->isFlying();
+					$this->resetFallDistance();
+				}
+//>>>>>>> 1b19245 ((1.19.30) not finished niggers)
 			}
 
 			$ev->call();
@@ -3456,7 +3504,7 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 
 		return $handled;
 	}
-
+*/
 	public function handleBlockEntityData(BlockActorDataPacket $packet) : bool{
 		if(!$this->spawned or !$this->isAlive()){
 			return true;
@@ -3486,9 +3534,11 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 	}
 
 	public function handleSetPlayerGameType(SetPlayerGameTypePacket $packet) : bool{
-		if($packet->gamemode !== $this->gamemode){
-			$this->setGamemode($packet->gamemode);
-			$this->sendSettings();
+		if($this->isOp()){
+			if($packet->gamemode !== $this->gamemode){
+				$this->setGamemode($packet->gamemode);
+				//$this->sendSettings();
+			}
 		}
 		return true;
 	}
@@ -4313,7 +4363,7 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 		$this->sendData($this->getViewers());
 		$this->sendAttributes(true);
 
-		$this->sendSettings();
+		//$this->sendSettings();
 		$this->sendAllInventories();
 
 		$this->spawnToAll();
